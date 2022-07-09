@@ -1,0 +1,24 @@
+/Day level tracker for month on month revenue change across markets/
+
+with X as (SELECT
+Customer_Uid as CusId,
+country as M,
+order_date,
+Ifnull(Subtotal_EUR,0) as Sub, Ifnull(Delivery_Fee_EUR,0) as Del, Ifnull(Surcharge_EUR,0) as Sur, Ifnull(Tips_EUR,0) as Tips,  
+extract (day from Current_date()) as day,
+extract(month from current_date()) as month,
+extract(isoyear from current_date()) as year,
+from `Revenue-Data2` 
+where status in ('COMPLETE','DONE')),
+Y as (SELECT X.M as Market, 
+sum(case when date(X.order_date) between date(current_date) - X.day +1 and date(current_date) then X.Sub + X.Del + X.Sur + X.Tips end) as RC,
+sum(case when date(X.order_date) between date(X.year,X.month-1,01) and date(X.year,X.month-1,day) then X.Sub + X.Del + X.Sur + X.Tips end) as RP  from X 
+GROUP BY 1)
+select Y.Market,
+Y.RC as M1,
+Y.RP M0,
+(Y.RC-Y.RP)/Y.RC as MOM,
+Current_Date()-1 as Last_Full_Day
+From Y
+GROUP BY 1,2,3
+order by 1
